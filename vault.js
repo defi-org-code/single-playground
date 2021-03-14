@@ -25,9 +25,10 @@ class Vault {
     this.totalShares += shares;
     this.totalLpTokens += lpTokens;
 
-    // new single algo
+    // new single algo - start
     this.singleAlgoTotalEth += eth;
     this.singleAlgoTotalUsd += usd;
+    // new single algo - end
     
     console.log(` received ${shares} shares`);
     return shares;
@@ -41,11 +42,13 @@ class Vault {
 
     const [eth, usd] = this.sushi.removeLiquidity(lpTokens);
 
-    // new single algo
-    const [ethFixed, usdFixed] = this.singleAlgoILStrategy1(shares, eth, usd);
-    //const [ethFixed, usdFixed] = this.singleAlgoILStrategy3(shares, eth, usd);
-    this.singleAlgoTotalEth -= ethFixed;
-    this.singleAlgoTotalUsd -= usdFixed;
+    // new single algo - start
+    const ethEntry = this.singleAlgoTotalEth * shares / this.totalShares;
+    const usdEntry = this.singleAlgoTotalUsd * shares / this.totalShares;
+    const [ethFixed, usdFixed] = this.singleAlgoILStrategy1(eth, usd, ethEntry, usdEntry);
+    this.singleAlgoTotalEth -= ethEntry;
+    this.singleAlgoTotalUsd -= usdEntry;
+    // new single algo - end
 
     this.totalShares -= shares;
     this.totalLpTokens -= lpTokens;
@@ -59,20 +62,35 @@ class Vault {
   }
 
   // returns [ethFixed, usdFixed]
-  singleAlgoILStrategy1(shares, eth, usd) {
-    const ethEntry = this.singleAlgoTotalEth * shares / this.totalShares;
-    const usdEntry = this.singleAlgoTotalUsd * shares / this.totalShares;
+  singleAlgoILStrategy1(eth, usd, ethEntry, usdEntry) {
+    if (usd > usdEntry) {
+      const usdDelta = usd - usdEntry;
+      eth += this.sushi.swapUsdToEth(usdDelta);
+      usd -= usdDelta;  
+    } else {
+      const ethDelta = Math.min(eth, eth * (usdEntry - usd) / usd);
+      eth -= ethDelta;
+      usd += this.sushi.swapEthToUsd(ethDelta);
+    }
     
-    const ethFixed = eth + (usd - usdEntry) / this.sushi.getEthPrice();
-    const usdFixed = usdEntry;
-    return [ethFixed, usdFixed];
+    return [eth, usd];
   }
 
   // returns [ethFixed, usdFixed]
-  singleAlgoILStrategy3(shares, eth, usd) {
-    const ethEntry = this.singleAlgoTotalEth * shares / this.totalShares;
-    const usdEntry = this.singleAlgoTotalUsd * shares / this.totalShares;
+  singleAlgoILStrategy2(eth, usd, ethEntry, usdEntry) {
+    if (usd > usdEntry) {
+      eth += this.sushi.swapUsdToEth(usd - usdEntry);
+      usd = usdEntry;  
+    } else {
+      eth = ethEntry;
+      usd += this.sushi.swapEthToUsd(eth - ethEntry); // TODO: remove swap
+    }
+    
+    return [eth, usd];
+  }
 
+  // returns [ethFixed, usdFixed]
+  singleAlgoILStrategy3(eth, usd, ethEntry, usdEntry) {
     const ethFixed = ethEntry * (usd + eth * this.sushi.getEthPrice()) / (usdEntry + ethEntry * this.sushi.getEthPrice());
     const usdFixed = (usd + eth * this.sushi.getEthPrice()) - (ethFixed * this.sushi.getEthPrice());
     return [ethFixed, usdFixed];

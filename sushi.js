@@ -45,6 +45,16 @@ class Sushi {
     return this.ethPriceUsd;
   }
 
+  // returns usd
+  swapEthToUsd(eth) {
+    return eth * this.ethPriceUsd;
+  }
+
+  // returns eth
+  swapUsdToEth(usd) {
+    return usd / this.ethPriceUsd;
+  }
+
 }
 
 module.exports = Sushi;
