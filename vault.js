@@ -1,6 +1,8 @@
-class Single {
+const Sushi = require('./sushi');
 
-  ethPriceUsd = 2000;
+class Vault {
+
+  sushi = new Sushi();
   totalShares = 0;
   totalEth = 0;
   totalUsd = 0;
@@ -36,10 +38,10 @@ class Single {
     return eth;
   }
   
-  setEthPrice(priceUsd) {
-    this.ethPriceUsd = priceUsd;
+  changeEthPrice(priceUsd) {
+    this.sushi.changeEthPrice(priceUsd);
   }
 
 }
 
-module.exports = Single;
+module.exports = Vault;
