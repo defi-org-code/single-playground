@@ -41,6 +41,10 @@ class Sushi {
     this.totalUsd = this.totalEth * this.ethPriceUsd;
   }
 
+  getEthPrice() {
+    return this.ethPriceUsd;
+  }
+
 }
 
 module.exports = Sushi;
