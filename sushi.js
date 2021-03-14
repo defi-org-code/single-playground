@@ -11,7 +11,7 @@ class Sushi {
     
     let lpTokens = 0;
     if (this.totalLpTokens == 0) {
-      lpTokens = Math.sqrt(eth * usd);
+      lpTokens = eth;
     } else {
       lpTokens = eth * this.totalLpTokens / this.totalEth;
     }

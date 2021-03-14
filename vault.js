@@ -4,22 +4,23 @@ class Vault {
 
   sushi = new Sushi();
   totalShares = 0;
-  totalEth = 0;
-  totalUsd = 0;
+  totalLpTokens = 0;
   
   // returns shares
   deposit(eth) {
     console.log(`deposit ${eth} eth`);
 
+    const [usd, lpTokens] = this.sushi.addLiquidityEth(eth);
+
     let shares = 0;
     if (this.totalShares == 0) {
-      shares = eth;
+      shares = lpTokens;
     } else {
-      shares = eth * this.totalShares / this.totalEth;
+      shares = lpTokens * this.totalShares / this.totalLpTokens;
     }
 
     this.totalShares += shares;
-    this.totalEth += eth;
+    this.totalLpTokens += lpTokens;
     
     console.log(` received ${shares} shares`);
     return shares;
@@ -29,10 +30,12 @@ class Vault {
   withdraw(shares) {
     console.log(`withdraw ${shares} shares`);
 
-    const eth = this.totalEth * shares / this.totalShares;
+    const lpTokens = this.totalLpTokens * shares / this.totalShares;
+
+    const [eth, usd] = this.sushi.removeLiquidity(lpTokens);
 
     this.totalShares -= shares;
-    this.totalEth -= eth;
+    this.totalLpTokens -= lpTokens;
 
     console.log(` received ${eth} eth`);
     return eth;
