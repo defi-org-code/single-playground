@@ -4,15 +4,12 @@
   "description": "",
   "main": "single.js",
   "scripts": {
-    "prettier": "prettier --write './**/*.{ts,js,json,sol}'",
-    "pretest": "npm run prettier",
-    "test": "mocha"
+    "test": "prettier --write './**/*.{ts,js,json,sol}' ; mocha"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "chai": "^4.3.4",
-    "lodash": "^4.17.21",
     "mocha": "^8.3.2",
     "prettier": "^2.2.1"
   }

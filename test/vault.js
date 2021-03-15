@@ -74,9 +74,37 @@ describe("Vault", () => {
     expect(v.totalInvestedUSD).to.eq(3000);
 
     const eth2 = v.withdrawAll("fishy");
-    expect(eth2).to.lte(1);
+    expect(eth2).to.closeTo(1, 0.001);
     expect(v.totalInvestedUSD).to.eq(0);
   });
+
+  it("same user enter multiple times", () => {
+    const v = new Vault();
+    v.changeEthPrice(2000);
+    v.deposit("user1", 100);
+    v.changeEthPrice(3000);
+    v.deposit("user1", 100);
+
+    const eth = v.withdrawAll("user1");
+    expect(eth).to.closeTo(196.63, 0.01);
+  });
+
+  it("same user exit multiple times, never leaves eth residues", () => {
+    const v = new Vault();
+    v.changeEthPrice(2000);
+    v.deposit("user1", 100);
+    v.changeEthPrice(3000);
+    v.deposit("user1", 100);
+
+    const eth = v.withdraw("user1", v.userInfos["user1"].shares / 2);
+    expect(eth).closeTo(196.63 / 2, 1);
+
+    const eth2 = v.withdrawAll("user1");
+    expect(eth + eth2).to.closeTo(196.63, 0.01);
+    expect(v.userInfos["user1"].eth).to.eq(0);
+  });
+
+  // multiple users
 });
 
 // ideas

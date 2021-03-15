@@ -1,5 +1,4 @@
 const Sushi = require("./sushi");
-const _ = require("lodash");
 
 class Vault {
   sushi = new Sushi();
@@ -31,6 +30,7 @@ class Vault {
 
     // new single algo - start
     this.totalInvestedUSD += usd; // TODO this is here only for book keeping
+
     if (!this.userInfos[msgSender]) this.userInfos[msgSender] = { eth, usd, shares };
     else {
       this.userInfos[msgSender].eth += eth;
@@ -54,8 +54,8 @@ class Vault {
     const [eth, usd] = this.sushi.removeLiquidity(lpTokens);
 
     // new single algo - start
-    const ethEntry = this.userInfos[msgSender].eth;
-    const usdEntry = this.userInfos[msgSender].usd;
+    const ethEntry = (this.userInfos[msgSender].eth * shares) / this.userInfos[msgSender].shares;
+    const usdEntry = (this.userInfos[msgSender].usd * shares) / this.userInfos[msgSender].shares;
     const [ethFixed, usdFixed] = this._applyRebalanceStrategy(eth, usd, ethEntry, usdEntry);
     this.userInfos[msgSender].eth -= ethEntry;
     this.userInfos[msgSender].usd -= usdEntry;
@@ -108,7 +108,6 @@ class Vault {
 
   // returns [ethFixed, usdFixed]
   _singleAlgoILStrategy2(eth, usd, ethEntry, usdEntry) {
-    console.log("here2");
     if (usd > usdEntry) {
       eth += this.sushi.swapUsdToEth(usd - usdEntry);
       usd = usdEntry;
