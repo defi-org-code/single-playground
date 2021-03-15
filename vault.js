@@ -1,21 +1,20 @@
 const Sushi = require("./sushi");
+const _ = require("lodash");
 
 class Vault {
   sushi = new Sushi();
   totalShares = 0;
   totalLpTokens = 0;
-  usdRequiredToMatch = 0;
+  totalInvestedUSD = 0;
   strategy = 1;
+  userInfos = {};
 
   constructor(strategy = 1) {
     this.strategy = strategy;
   }
 
-  singleAlgoTotalEth = 0;
-  singleAlgoTotalUsd = 0;
-
   // returns shares
-  deposit(eth) {
+  deposit(msgSender, eth) {
     console.log(`deposit ${eth} eth`);
 
     const [usd, lpTokens] = this.sushi.addLiquidityEth(eth);
@@ -31,8 +30,13 @@ class Vault {
     this.totalLpTokens += lpTokens;
 
     // new single algo - start
-    this.singleAlgoTotalEth += eth;
-    this.singleAlgoTotalUsd += usd;
+    this.totalInvestedUSD += usd; // TODO this is here only for book keeping
+    if (!this.userInfos[msgSender]) this.userInfos[msgSender] = { eth, usd, shares };
+    else {
+      this.userInfos[msgSender].eth += eth;
+      this.userInfos[msgSender].usd += usd;
+      this.userInfos[msgSender].shares += shares;
+    }
     // new single algo - end
 
     console.log(` received ${shares} shares`);
@@ -40,25 +44,29 @@ class Vault {
   }
 
   // returns eth
-  withdraw(shares) {
+  withdraw(msgSender, shares) {
     console.log(`withdraw ${shares} shares`);
+
+    shares = Math.min(this.userInfos[msgSender].shares, shares); // truncate shares to <= allocated
 
     const lpTokens = (this.totalLpTokens * shares) / this.totalShares;
 
     const [eth, usd] = this.sushi.removeLiquidity(lpTokens);
 
     // new single algo - start
-    const ethEntry = (this.singleAlgoTotalEth * shares) / this.totalShares;
-    const usdEntry = (this.singleAlgoTotalUsd * shares) / this.totalShares;
-    const [ethFixed, usdFixed] = this._applyStrategy(this.strategy, eth, usd, ethEntry, usdEntry);
-    this.singleAlgoTotalEth -= ethEntry;
-    this.singleAlgoTotalUsd -= usdEntry;
+    const ethEntry = this.userInfos[msgSender].eth;
+    const usdEntry = this.userInfos[msgSender].usd;
+    const [ethFixed, usdFixed] = this._applyRebalanceStrategy(eth, usd, ethEntry, usdEntry);
+    this.userInfos[msgSender].eth -= ethEntry;
+    this.userInfos[msgSender].usd -= usdEntry;
+    this.userInfos[msgSender].shares -= shares;
+
+    this.totalInvestedUSD -= usdFixed; // TODO this is here only for book keeping
     // new single algo - end
 
     this.totalShares -= shares;
     this.totalLpTokens -= lpTokens;
 
-    this.usdRequiredToMatch += usdFixed;
     console.log(` received ${ethFixed} eth`);
     return ethFixed;
   }
@@ -67,8 +75,8 @@ class Vault {
     this.sushi.changeEthPrice(priceUsd);
   }
 
-  _applyStrategy(strategy, eth, usd, ethEntry, usdEntry) {
-    switch (strategy) {
+  _applyRebalanceStrategy(eth, usd, ethEntry, usdEntry) {
+    switch (this.strategy) {
       default:
       case 1:
         return this._singleAlgoILStrategy1(eth, usd, ethEntry, usdEntry);
