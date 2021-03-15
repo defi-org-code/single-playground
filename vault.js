@@ -4,7 +4,7 @@ class Vault {
   sushi = new Sushi();
   totalShares = 0;
   totalLpTokens = 0;
-  usdInVault = 0;
+  usdRequiredToMatch = 0;
   strategy = 1;
 
   constructor(strategy = 1) {
@@ -58,7 +58,7 @@ class Vault {
     this.totalShares -= shares;
     this.totalLpTokens -= lpTokens;
 
-    this.usdInVault += usdFixed;
+    this.usdRequiredToMatch += usdFixed;
     console.log(` received ${ethFixed} eth`);
     return ethFixed;
   }
@@ -96,6 +96,7 @@ class Vault {
 
   // returns [ethFixed, usdFixed]
   _singleAlgoILStrategy2(eth, usd, ethEntry, usdEntry) {
+    console.log("here2");
     if (usd > usdEntry) {
       eth += this.sushi.swapUsdToEth(usd - usdEntry);
       usd = usdEntry;
