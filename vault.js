@@ -71,6 +71,10 @@ class Vault {
     return ethFixed;
   }
 
+  withdrawAll(msgSender) {
+    return this.withdraw(msgSender, this.userInfos[msgSender].shares);
+  }
+
   changeEthPrice(priceUsd) {
     this.sushi.changeEthPrice(priceUsd);
   }

@@ -69,11 +69,11 @@ describe("Vault", () => {
     v.deposit("fishy", 1);
     expect(v.totalInvestedUSD).to.eq(200_003_000);
 
-    const eth = v.withdraw("whale", 1000000000000); // TODO withdrawAll
+    const eth = v.withdrawAll("whale");
     expect(eth).to.lte(100_000);
     expect(v.totalInvestedUSD).to.eq(3000);
 
-    const eth2 = v.withdraw("fishy", 1000000000000); // TODO withdrawAll
+    const eth2 = v.withdrawAll("fishy");
     expect(eth2).to.lte(1);
     expect(v.totalInvestedUSD).to.eq(0);
   });
