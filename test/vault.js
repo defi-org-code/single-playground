@@ -102,12 +102,53 @@ describe("Vault", () => {
     const eth2 = v.withdrawAll("user1");
     expect(eth + eth2).to.closeTo(196.63, 0.01);
     expect(v.userInfos["user1"].eth).to.eq(0);
+    expect(v.userInfos["user1"].usd).to.eq(0);
   });
 
-  // multiple users
-});
+  it("correct eth returns for different prices over time", () => {
+    const v = new Vault(2);
+    v.changeEthPrice(2000);
 
-// ideas
-// farms like autofarm - without shares
-// Harvest has NoMintRewardPool - a share-less pool
-// more complex: save deposit allowance map per sender, shares are transferable but not redeemable over allocation
+    v.deposit("user1", 100);
+
+    v.changeEthPrice(3000);
+    v.deposit("user1", 100);
+
+    v.changeEthPrice(1000);
+    v.deposit("user1", 100);
+
+    v.changeEthPrice(2000);
+    v.deposit("user1", 100);
+
+    const eth = v.withdrawAll("user1");
+    // expect(v.totalInvestedUSD).to.eq(0); // strategy1
+    expect(v.totalInvestedUSD).to.closeTo(13_690, 1000); // strategy2
+    // TODO this is permanent loss of 13k for the capital provider!
+
+    expect(v.userInfos["user1"].eth).to.eq(0);
+    expect(v.userInfos["user1"].usd).to.eq(0);
+    expect(v.userInfos["user1"].shares).to.eq(0);
+    // expect(eth).to.closeTo(386.37, 1); // strategy1
+    expect(eth).to.closeTo(400, 1); //strategy2
+  });
+
+  it("multiple users", () => {
+    const v = new Vault(1);
+    v.changeEthPrice(2000);
+
+    v.deposit("user1", 100);
+    v.changeEthPrice(3000);
+    v.deposit("user1", 100);
+    v.changeEthPrice(1000);
+    v.deposit("user2", 100);
+    v.changeEthPrice(3000);
+    v.deposit("user2", 100);
+
+    const eth1 = v.withdrawAll("user1");
+    expect(eth1).to.closeTo(196, 1);
+    const eth2 = v.withdrawAll("user2");
+    expect(eth2).to.closeTo(182, 1);
+
+    expect(v.totalInvestedUSD).to.closeTo(0, 1); // strategy1
+  });
+});

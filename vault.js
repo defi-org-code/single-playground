@@ -56,19 +56,19 @@ class Vault {
     // new single algo - start
     const ethEntry = (this.userInfos[msgSender].eth * shares) / this.userInfos[msgSender].shares;
     const usdEntry = (this.userInfos[msgSender].usd * shares) / this.userInfos[msgSender].shares;
-    const [ethFixed, usdFixed] = this._applyRebalanceStrategy(eth, usd, ethEntry, usdEntry);
+    const [ethExit, usdExit] = this._applyRebalanceStrategy(eth, usd, ethEntry, usdEntry);
     this.userInfos[msgSender].eth -= ethEntry;
     this.userInfos[msgSender].usd -= usdEntry;
     this.userInfos[msgSender].shares -= shares;
 
-    this.totalInvestedUSD -= usdFixed; // TODO this is here only for book keeping
+    this.totalInvestedUSD -= usdExit; // TODO leftovers here represent CapitalProvider loss
     // new single algo - end
 
     this.totalShares -= shares;
     this.totalLpTokens -= lpTokens;
 
-    console.log(` received ${ethFixed} eth`);
-    return ethFixed;
+    console.log(` received ${ethExit} eth`);
+    return ethExit;
   }
 
   withdrawAll(msgSender) {
