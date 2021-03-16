@@ -3,7 +3,6 @@ const Sushi = require("./sushi");
 class Vault {
   sushi = new Sushi();
   totalShares = 0;
-  totalLpTokens = 0;
   totalInvestedUSD = 0;
   strategy = 1;
   userInfos = {};
@@ -16,17 +15,9 @@ class Vault {
   deposit(msgSender, eth) {
     console.log(`deposit ${eth} eth`);
 
-    const [usd, lpTokens] = this.sushi.addLiquidityEth(eth);
-
-    let shares = 0;
-    if (this.totalShares == 0) {
-      shares = lpTokens;
-    } else {
-      shares = (lpTokens * this.totalShares) / this.totalLpTokens;
-    }
+    const [usd, shares] = this.sushi.addLiquidityEth(eth);
 
     this.totalShares += shares;
-    this.totalLpTokens += lpTokens;
 
     // new single algo - start
     this.totalInvestedUSD += usd; // TODO this is here only for book keeping
@@ -49,9 +40,7 @@ class Vault {
 
     shares = Math.min(this.userInfos[msgSender].shares, shares); // truncate shares to <= allocated
 
-    const lpTokens = (this.totalLpTokens * shares) / this.totalShares;
-
-    const [eth, usd] = this.sushi.removeLiquidity(lpTokens);
+    const [eth, usd] = this.sushi.removeLiquidity(shares);
 
     // new single algo - start
     const ethEntry = (this.userInfos[msgSender].eth * shares) / this.userInfos[msgSender].shares;
@@ -65,7 +54,6 @@ class Vault {
     // new single algo - end
 
     this.totalShares -= shares;
-    this.totalLpTokens -= lpTokens;
 
     console.log(` received ${ethExit} eth`);
     return ethExit;
