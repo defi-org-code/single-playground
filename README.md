@@ -12,7 +12,7 @@ The simulation is implemented in JavaScript instead of Solidity and uses simple 
 
 * [crazy-idea1](https://github.com/defi-org-code/single-playground/tree/crazy-idea1) - Single-sided vault based on ERC20-compatible vault shares, where all ETH depositors share IL together. This approach is open to exploitation, which is shown in tests.
 
-* [no-shares](https://github.com/defi-org-code/single-playground/tree/no-shares) - A better single-sided vault implementation that isolates IL between ETH depositors. Does not support shares though.
+* [no-shares](https://github.com/defi-org-code/single-playground/tree/no-shares) - A better single-sided vault implementation that isolates IL between ETH depositors. Does not support ERC20-compatible shares though.
 
 ## Run
 
