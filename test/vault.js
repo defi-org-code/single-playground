@@ -24,11 +24,11 @@ describe("Vault", () => {
     v.changeEthPrice(2000);
 
     const shares = v.deposit("user1", 100);
-    expect(v.totalInvestedUSD).to.eq(200_000);
+    expect(v.usdBalance).to.eq(-200_000);
 
     const eth = v.withdraw("user1", shares);
     expect(eth).to.eq(100);
-    expect(v.totalInvestedUSD).to.eq(0);
+    expect(v.usdBalance).to.eq(0);
   });
 
   it("guard against entry-exit exploit", () => {
@@ -38,15 +38,15 @@ describe("Vault", () => {
 
     v.changeEthPrice(3000);
 
-    expect(v.totalInvestedUSD).to.eq(200_000);
+    expect(v.usdBalance).to.eq(-200_000);
 
     const eth = v.withdraw("user2", v.deposit("user2", 100));
     expect(eth).to.eq(100);
-    expect(v.totalInvestedUSD).to.eq(200_000);
+    expect(v.usdBalance).to.eq(-200_000);
 
     const eth2 = v.withdraw("user2", v.deposit("user2", 100));
     expect(eth2).to.eq(100);
-    expect(v.totalInvestedUSD).to.eq(200_000);
+    expect(v.usdBalance).to.eq(-200_000);
   });
 
   it("never withdraw more shares than allocated", () => {
@@ -54,28 +54,28 @@ describe("Vault", () => {
     const shares = v.deposit("user1", 100);
     const eth = v.withdraw("user1", shares + 10);
     expect(eth).to.eq(100);
-    expect(v.totalInvestedUSD).to.eq(0);
+    expect(v.usdBalance).to.eq(0);
   });
 
   it("whale -> price increase -> fish -> whale exit -> fish exit", () => {
     const v = new Vault();
     v.changeEthPrice(2000);
     v.deposit("whale", 100_000);
-    expect(v.totalInvestedUSD).to.eq(200_000_000);
+    expect(v.usdBalance).to.eq(-200_000_000);
 
     v.changeEthPrice(3000);
-    expect(v.totalInvestedUSD).to.eq(200_000_000);
+    expect(v.usdBalance).to.eq(-200_000_000);
 
     v.deposit("fishy", 1);
-    expect(v.totalInvestedUSD).to.eq(200_003_000);
+    expect(v.usdBalance).to.eq(-200_003_000);
 
     const eth = v.withdrawAll("whale");
     expect(eth).to.lte(100_000);
-    expect(v.totalInvestedUSD).to.eq(3000);
+    expect(v.usdBalance).to.eq(-3000);
 
     const eth2 = v.withdrawAll("fishy");
     expect(eth2).to.closeTo(1, 0.001);
-    expect(v.totalInvestedUSD).to.eq(0);
+    expect(v.usdBalance).to.eq(0);
   });
 
   it("same user enter multiple times", () => {
@@ -122,7 +122,7 @@ describe("Vault", () => {
 
     const eth = v.withdrawAll("user1");
     // expect(v.totalInvestedUSD).to.eq(0); // strategy1
-    expect(v.totalInvestedUSD).to.closeTo(13_690, 1000); // strategy2
+    expect(v.usdBalance).to.closeTo(-27_000, 1000); // strategy2
     // TODO this is permanent loss of 13k for the capital provider!
 
     expect(v.userInfos["user1"].eth).to.eq(0);
@@ -149,6 +149,106 @@ describe("Vault", () => {
     const eth2 = v.withdrawAll("user2");
     expect(eth2).to.closeTo(182, 1);
 
-    expect(v.totalInvestedUSD).to.closeTo(0, 1); // strategy1
+    expect(v.usdBalance).to.closeTo(0, 1); // strategy1
+  });
+
+  it("strategy2", () => {
+    const v = new Vault(2);
+    v.changeEthPrice(2000);
+    v.deposit("user1", 100);
+    v.changeEthPrice(200);
+
+    expect(v.withdrawAll("user1")).to.eq(100);
+    expect(v.usdBalance).to.closeTo(-93_508, 1);
+  });
+
+  describe("interest bearing lp tokens", () => {
+    describe("strategy1", () => {
+      it("lpTokens are interest bearing", () => {
+        const v = new Vault(1);
+        v.changeEthPrice(1000);
+
+        v.deposit("user1", 100);
+        v.deposit("user2", 100);
+
+        v.simulateInterestAccumulation(1.0);
+
+        expect(v.withdrawAll("user1")).to.closeTo(300, 0.1);
+        expect(v.withdrawAll("user2")).to.closeTo(300, 0.1);
+        expect(v.usdBalance).to.eq(0);
+      });
+
+      it("price increase", () => {
+        const v = new Vault(1);
+        v.changeEthPrice(1000);
+        v.deposit("user1", 100);
+        v.deposit("user2", 100);
+        v.simulateInterestAccumulation(1.0);
+        v.changeEthPrice(2000);
+
+        expect(v.withdrawAll("user1")).to.closeTo(232, 1);
+        expect(v.withdrawAll("user2")).to.closeTo(232, 1);
+        expect(v.usdBalance).to.eq(0);
+      });
+
+      it("price drop", () => {
+        const v = new Vault(1);
+        v.changeEthPrice(2000);
+        v.deposit("user1", 100);
+        v.deposit("user2", 100);
+        v.simulateInterestAccumulation(0.5811388301);
+        v.changeEthPrice(200);
+
+        const eth1 = v.withdrawAll("user1");
+        const eth2 = v.withdrawAll("user2");
+        expect(eth1).to.closeTo(0, 1);
+        expect(eth2).to.closeTo(0, 1);
+        expect(v.usdBalance).to.eq(0);
+      });
+    });
+
+    describe("strategy2", () => {
+      it("lpTokens are interest bearing", () => {
+        const v = new Vault(2);
+        v.changeEthPrice(1000);
+
+        v.deposit("user1", 100);
+        v.deposit("user2", 100);
+
+        v.simulateInterestAccumulation(1.0);
+
+        expect(v.withdrawAll("user1")).to.closeTo(300, 0.1);
+        expect(v.withdrawAll("user2")).to.closeTo(300, 0.1);
+        expect(v.usdBalance).to.eq(0);
+      });
+
+      it("price increase", () => {
+        const v = new Vault(2);
+        v.changeEthPrice(1000);
+        v.deposit("user1", 100);
+        v.deposit("user2", 100);
+        v.simulateInterestAccumulation(1.0);
+        v.changeEthPrice(2000);
+
+        expect(v.withdrawAll("user1")).to.closeTo(232, 1);
+        expect(v.withdrawAll("user2")).to.closeTo(232, 1);
+        expect(v.usdBalance).to.eq(0);
+      });
+
+      it("price drop", () => {
+        const v = new Vault(2);
+        v.changeEthPrice(2000);
+        v.deposit("user1", 100);
+        v.deposit("user2", 100);
+        v.simulateInterestAccumulation(1);
+        v.changeEthPrice(200);
+
+        const eth1 = v.withdrawAll("user1");
+        const eth2 = v.withdrawAll("user2");
+        expect(eth1).to.closeTo(100, 1);
+        expect(eth2).to.closeTo(100, 1);
+        expect(v.usdBalance).to.closeTo(65_000, 1000);
+      });
+    });
   });
 });

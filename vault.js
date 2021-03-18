@@ -4,7 +4,7 @@ class Vault {
   sushi = new Sushi();
   totalShares = 0;
   totalLpTokens = 0;
-  totalInvestedUSD = 0;
+  usdBalance = 0;
   strategy = 1;
   userInfos = {};
 
@@ -29,7 +29,7 @@ class Vault {
     this.totalLpTokens += lpTokens;
 
     // new single algo - start
-    this.totalInvestedUSD += usd; // TODO this is here only for book keeping
+    this.usdBalance -= usd; // TODO this is here only for book keeping
 
     if (!this.userInfos[msgSender]) this.userInfos[msgSender] = { eth, usd, shares };
     else {
@@ -52,7 +52,6 @@ class Vault {
     const lpTokens = (this.totalLpTokens * shares) / this.totalShares;
 
     const [eth, usd] = this.sushi.removeLiquidity(lpTokens);
-
     // new single algo - start
     const ethEntry = (this.userInfos[msgSender].eth * shares) / this.userInfos[msgSender].shares;
     const usdEntry = (this.userInfos[msgSender].usd * shares) / this.userInfos[msgSender].shares;
@@ -61,7 +60,7 @@ class Vault {
     this.userInfos[msgSender].usd -= usdEntry;
     this.userInfos[msgSender].shares -= shares;
 
-    this.totalInvestedUSD -= usdExit; // TODO leftovers here represent CapitalProvider loss
+    this.usdBalance += usdExit;
     // new single algo - end
 
     this.totalShares -= shares;
@@ -77,6 +76,10 @@ class Vault {
 
   changeEthPrice(priceUsd) {
     this.sushi.changeEthPrice(priceUsd);
+  }
+
+  simulateInterestAccumulation(interestPercent) {
+    this.sushi.simulateInterestAccumulation(interestPercent);
   }
 
   _applyRebalanceStrategy(eth, usd, ethEntry, usdEntry) {
@@ -99,8 +102,8 @@ class Vault {
       usd -= usdDelta;
     } else {
       const ethDelta = Math.min(eth, (eth * (usdEntry - usd)) / usd);
-      eth -= ethDelta;
       usd += this.sushi.swapEthToUsd(ethDelta);
+      eth -= ethDelta;
     }
 
     return [eth, usd];
@@ -112,8 +115,8 @@ class Vault {
       eth += this.sushi.swapUsdToEth(usd - usdEntry);
       usd = usdEntry;
     } else {
-      eth = ethEntry;
       usd += this.sushi.swapEthToUsd(eth - ethEntry); // TODO: remove swap
+      eth = ethEntry;
     }
 
     return [eth, usd];

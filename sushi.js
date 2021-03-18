@@ -40,6 +40,11 @@ class Sushi {
     this.totalUsd = this.totalEth * this.ethPriceUsd;
   }
 
+  simulateInterestAccumulation(interestPercent) {
+    this.totalEth *= 1 + interestPercent;
+    this.totalUsd *= 1 + interestPercent;
+  }
+
   getEthPrice() {
     return this.ethPriceUsd;
   }
