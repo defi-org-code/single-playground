@@ -6,7 +6,7 @@ Often, to design sound economics and experiment with economic attack vectors, a 
 
 The simulation is implemented in JavaScript instead of Solidity and uses simple mocks for Sushi that allow testing scenarios that are relatviely hard to achieve on the real Sushi contract. One example is changing the price of ETH - which allows us to check how the vault behaves in the case an attacker manipulates ETH price, which is theoretically possible using flash loans.
 
-Branches of note:
+### Branches of note
 
 * [master](https://github.com/defi-org-code/single-playground/tree/master) - The simple straightforward double sided implementation (control).
 
