@@ -89,7 +89,7 @@ describe("Vault", () => {
     expect(eth).to.closeTo(196.63, 0.01);
   });
 
-  it("same user exit multiple times, never leaves eth residues", () => {
+  it("same user exit multiple times, no eth residues", () => {
     const v = new Vault();
     v.changeEthPrice(2000);
     v.deposit("user1", 100);
@@ -105,35 +105,8 @@ describe("Vault", () => {
     expect(v.userInfos["user1"].usd).to.eq(0);
   });
 
-  it("correct eth returns for different prices over time", () => {
-    const v = new Vault(2);
-    v.changeEthPrice(2000);
-
-    v.deposit("user1", 100);
-
-    v.changeEthPrice(3000);
-    v.deposit("user1", 100);
-
-    v.changeEthPrice(1000);
-    v.deposit("user1", 100);
-
-    v.changeEthPrice(2000);
-    v.deposit("user1", 100);
-
-    const eth = v.withdrawAll("user1");
-    // expect(v.totalInvestedUSD).to.eq(0); // strategy1
-    expect(v.usdBalance).to.closeTo(-27_000, 1000); // strategy2
-    // TODO this is permanent loss of 13k for the capital provider!
-
-    expect(v.userInfos["user1"].eth).to.eq(0);
-    expect(v.userInfos["user1"].usd).to.eq(0);
-    expect(v.userInfos["user1"].shares).to.eq(0);
-    // expect(eth).to.closeTo(386.37, 1); // strategy1
-    expect(eth).to.closeTo(400, 1); //strategy2
-  });
-
   it("multiple users", () => {
-    const v = new Vault(1);
+    const v = new Vault();
     v.changeEthPrice(2000);
 
     v.deposit("user1", 100);
@@ -149,106 +122,22 @@ describe("Vault", () => {
     const eth2 = v.withdrawAll("user2");
     expect(eth2).to.closeTo(182, 1);
 
-    expect(v.usdBalance).to.closeTo(0, 1); // strategy1
+    expect(v.usdBalance).to.closeTo(0, 1);
   });
 
-  it("strategy2", () => {
-    const v = new Vault(2);
+  it("compoundProfits distributes to all per share", () => {
+    const v = new Vault();
     v.changeEthPrice(2000);
     v.deposit("user1", 100);
-    v.changeEthPrice(200);
+    v.deposit("user2", 200);
 
-    expect(v.withdrawAll("user1")).to.eq(100);
-    expect(v.usdBalance).to.closeTo(-93_508, 1);
-  });
+    v.compoundProfits(100);
 
-  describe("interest bearing lp tokens", () => {
-    describe("strategy1", () => {
-      it("lpTokens are interest bearing", () => {
-        const v = new Vault(1);
-        v.changeEthPrice(1000);
+    const eth1 = v.withdrawAll("user1");
+    const eth2 = v.withdrawAll("user2");
+    expect(v.usdBalance).to.eq(0);
 
-        v.deposit("user1", 100);
-        v.deposit("user2", 100);
-
-        v.simulateInterestAccumulation(1.0);
-
-        expect(v.withdrawAll("user1")).to.closeTo(300, 0.1);
-        expect(v.withdrawAll("user2")).to.closeTo(300, 0.1);
-        expect(v.usdBalance).to.eq(0);
-      });
-
-      it("price increase", () => {
-        const v = new Vault(1);
-        v.changeEthPrice(1000);
-        v.deposit("user1", 100);
-        v.deposit("user2", 100);
-        v.simulateInterestAccumulation(1.0);
-        v.changeEthPrice(2000);
-
-        expect(v.withdrawAll("user1")).to.closeTo(232, 1);
-        expect(v.withdrawAll("user2")).to.closeTo(232, 1);
-        expect(v.usdBalance).to.eq(0);
-      });
-
-      it("price drop", () => {
-        const v = new Vault(1);
-        v.changeEthPrice(2000);
-        v.deposit("user1", 100);
-        v.deposit("user2", 100);
-        v.simulateInterestAccumulation(0.5811388301);
-        v.changeEthPrice(200);
-
-        const eth1 = v.withdrawAll("user1");
-        const eth2 = v.withdrawAll("user2");
-        expect(eth1).to.closeTo(0, 1);
-        expect(eth2).to.closeTo(0, 1);
-        expect(v.usdBalance).to.eq(0);
-      });
-    });
-
-    describe("strategy2", () => {
-      it("lpTokens are interest bearing", () => {
-        const v = new Vault(2);
-        v.changeEthPrice(1000);
-
-        v.deposit("user1", 100);
-        v.deposit("user2", 100);
-
-        v.simulateInterestAccumulation(1.0);
-
-        expect(v.withdrawAll("user1")).to.closeTo(300, 0.1);
-        expect(v.withdrawAll("user2")).to.closeTo(300, 0.1);
-        expect(v.usdBalance).to.eq(0);
-      });
-
-      it("price increase", () => {
-        const v = new Vault(2);
-        v.changeEthPrice(1000);
-        v.deposit("user1", 100);
-        v.deposit("user2", 100);
-        v.simulateInterestAccumulation(1.0);
-        v.changeEthPrice(2000);
-
-        expect(v.withdrawAll("user1")).to.closeTo(232, 1);
-        expect(v.withdrawAll("user2")).to.closeTo(232, 1);
-        expect(v.usdBalance).to.eq(0);
-      });
-
-      it("price drop", () => {
-        const v = new Vault(2);
-        v.changeEthPrice(2000);
-        v.deposit("user1", 100);
-        v.deposit("user2", 100);
-        v.simulateInterestAccumulation(1);
-        v.changeEthPrice(200);
-
-        const eth1 = v.withdrawAll("user1");
-        const eth2 = v.withdrawAll("user2");
-        expect(eth1).to.closeTo(100, 1);
-        expect(eth2).to.closeTo(100, 1);
-        expect(v.usdBalance).to.closeTo(65_000, 1000);
-      });
-    });
+    expect(eth1).to.closeTo(166, 1);
+    expect(eth2).to.closeTo(333, 1);
   });
 });
