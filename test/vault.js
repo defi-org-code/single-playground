@@ -125,7 +125,7 @@ describe("Vault", () => {
     expect(v.usdBalance).to.closeTo(0, 1);
   });
 
-  it("compoundProfits distributes to all per share", () => {
+  it("compoundProfits distributes to all per share, swaps half the rewards for USD", () => {
     const v = new Vault();
     v.changeEthPrice(2000);
     v.deposit("user1", 100);
@@ -137,7 +137,7 @@ describe("Vault", () => {
     const eth2 = v.withdrawAll("user2");
     expect(v.usdBalance).to.eq(0);
 
-    expect(eth1).to.closeTo(166, 1);
-    expect(eth2).to.closeTo(333, 1);
+    expect(eth1).to.closeTo(133, 1);
+    expect(eth2).to.closeTo(266, 1);
   });
 });

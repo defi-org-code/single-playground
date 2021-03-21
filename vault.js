@@ -70,6 +70,7 @@ class Vault {
   }
 
   compoundProfits(eth) {
+    eth /= 2; // swap 50% to usd to avoid capital provider funding exploit
     const [usd, lpTokens] = this.sushi.addLiquidityEth(eth);
     this.totalLpTokens += lpTokens;
   }
