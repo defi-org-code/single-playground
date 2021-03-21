@@ -59,7 +59,6 @@ class Vault {
     this.userInfos[msgSender].eth -= ethEntry;
     this.userInfos[msgSender].usd -= usdEntry;
     this.userInfos[msgSender].shares -= shares;
-
     this.usdBalance += usdExit;
     // new single algo - end
 
@@ -68,6 +67,11 @@ class Vault {
 
     console.log(` received ${ethExit} eth`);
     return ethExit;
+  }
+
+  compoundProfits(eth) {
+    const [usd, lpTokens] = this.sushi.addLiquidityEth(eth);
+    this.totalLpTokens += lpTokens;
   }
 
   withdrawAll(msgSender) {
